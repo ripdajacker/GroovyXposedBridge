@@ -111,7 +111,7 @@ The DSL passes the parameters directly to the hooks, so it's very easy to work w
 
 ## Replacing a method
 Continuing with the clock example:
-```
+```groovy
 replaceMethod("com.android.systemui.statusbar.policy.Clock") {
     method "updateClock"
     replace {
@@ -122,7 +122,7 @@ replaceMethod("com.android.systemui.statusbar.policy.Clock") {
 
 ## Hooking a constructor
 
-```
+```groovy
 hookConstructor("com.android.systemui.statusbar.policy.Clock") {
     params Context.class
     before { Context ctx ->
@@ -133,7 +133,7 @@ hookConstructor("com.android.systemui.statusbar.policy.Clock") {
 
 ## Looking up a class
 There is a `findClass(String name)` method, that uses the classloader from Xposed loadPackageParams.
-```
+```groovy
 Class clazz = findClass("com.android.systemui.statusbar.policy.Clock")
 // Do something
 ```
