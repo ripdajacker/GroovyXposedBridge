@@ -107,7 +107,8 @@ hookMethod('com.android.settings.Settings') {
 ```
 The DSL passes the parameters directly to the hooks, so it's very easy to work with.
 
-# More functions
+# More functionality
+
 
 ## Replacing a method
 Continuing with the clock example:
@@ -116,6 +117,28 @@ replaceMethod("com.android.systemui.statusbar.policy.Clock") {
     method "updateClock"
     replace {
         thisObject.setText("No clock!")
+    }
+}
+```
+
+## Setting the return value
+
+```groovy
+replaceMethod("com.android.systemui.statusbar.policy.Clock") {
+    method "getSmallTime"
+    after {
+        result = "42"
+    }
+}
+```
+## Manipulating parameters
+
+```groovy
+replaceMethod("java.io.File") {
+    method "renameTo"
+    params File.class
+    before {
+        args[0] = File.createTempFile("HelloWorld", ".replaced")
     }
 }
 ```
