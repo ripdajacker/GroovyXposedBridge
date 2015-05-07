@@ -22,7 +22,7 @@ For the sake of simplicity, I have taken the Xposed tutorial examples and rewrit
 
 ### Java version
 Consult the official Xposed tutorial for a rundown.
-```
+```java
 import android.graphics.Color;
 import android.widget.TextView;
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -55,7 +55,7 @@ The example below shows how the dynamic nature of Groovy helps in a situation li
 
 Instead of casting the `param.thisObject` as a `TextView`, you can just call `getText()` directly.
 
-```
+```groovy
 import android.graphics.Color
 import dk.mehmedbasic.groovyxposedbridge.GroovyXposed
 
@@ -88,7 +88,7 @@ The DSL exposes parameters to the methodhooks.
 The java example is from the XDA tutorial written by [hamzahrmalik](http://forum.xda-developers.com/showthread.php?t=2709324):
 
 Instead of casting parameters like this:
-``` 
+``` java
 findAndHookMethod("com.android.settings.Settings", lpparam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
     @Override
     protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
@@ -99,7 +99,7 @@ findAndHookMethod("com.android.settings.Settings", lpparam.classLoader, "onCreat
 ```
 
 We can simply write:
-```
+```groovy
 hookMethod('com.android.settings.Settings') {
     method "onCreate"
     params Bundle.class
