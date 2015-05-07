@@ -93,7 +93,9 @@ findAndHookMethod("com.android.settings.Settings", lpparam.classLoader, "onCreat
     @Override
     protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
         Bundle bundle = (Bundle) param.args[0];
-        Log.i("SettingsExample", bundle.getString("test"));
+        if(bundle != null) {
+            Log.i("SettingsExample", bundle.getString("test"));
+        }
     }
 });
 ```
@@ -104,7 +106,7 @@ hookMethod('com.android.settings.Settings') {
     method "onCreate"
     params Bundle.class
     before { Bundle bundle ->
-        Log.i("GroovyParameters", bundle.getString("test"))
+        Log.i("GroovyParameters", bundle?.getString("test"))
     }
 }
 ```
