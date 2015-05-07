@@ -59,11 +59,6 @@ Instead of casting the `param.thisObject` as a `TextView`, you can just call `ge
 import android.graphics.Color
 import dk.mehmedbasic.groovyxposedbridge.GroovyXposed
 
-/**
- * Groovy version of the XposedBridge tutorial
- *
- * @author Jesenko Mehmedbasic
- */
 class GroovyClock extends GroovyXposed {
     GroovyClock() {
         super("com.android.systemui")
