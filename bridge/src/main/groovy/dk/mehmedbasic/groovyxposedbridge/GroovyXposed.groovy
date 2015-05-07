@@ -17,9 +17,9 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
     private static final Object UNDEFINED = new Object()
 
 
-    private XC_LoadPackage.LoadPackageParam loadPackageParam
-    private XC_InitPackageResources.InitPackageResourcesParam initPackageResourcesParam
-    private IXposedHookZygoteInit.StartupParam startupParam
+    protected XC_LoadPackage.LoadPackageParam loadPackageParam
+    protected XC_InitPackageResources.InitPackageResourcesParam initPackageResourcesParam
+    protected IXposedHookZygoteInit.StartupParam startupParam
 
     private String targetPackage
     private String modulePath
@@ -34,6 +34,7 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
             return
         }
         this.initPackageResourcesParam = initPackageResourcesParam
+        handleInitPackageResources()
     }
 
 
@@ -257,4 +258,7 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
     }
 
     abstract void handleLoadedPackage()
+
+    void handleInitPackageResources() {
+    }
 }
