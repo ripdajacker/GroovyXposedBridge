@@ -107,7 +107,40 @@ hookMethod('com.android.settings.Settings') {
 ```
 The DSL passes the parameters directly to the hooks, so it's very easy to work with.
 
-# Development
+# More functions
+
+## Replacing a method
+Continuing with the clock example:
+```
+replaceMethod("com.android.systemui.statusbar.policy.Clock") {
+    method "updateClock"
+    replace {
+        thisObject.setText("No clock!")
+    }
+}
+```
+
+## Hooking a constructor
+
+```
+hookConstructor("com.android.systemui.statusbar.policy.Clock") {
+    params Context.class
+    before { Context ctx ->
+        // Do something
+    }
+}
+```
+
+## Looking up a class
+There is a `findClass(String name)` method, that uses the classloader from Xposed loadPackageParams.
+```
+Class clazz = findClass("com.android.systemui.statusbar.policy.Clock")
+// Do something
+```
+
+
+
+# Suggestions and development
 This is so far a very small piece of code that I made to help me with some reflection on android.
 
-Feel free to send me suggestions for improvements, fork the library or use it.
+Feel free to send me suggestions for improvements, since I am certain I haven't covered all the use cases.
