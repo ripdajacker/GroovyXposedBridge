@@ -236,6 +236,19 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
 
     }
 
+    /**
+     * A constant closure
+     *
+     * @param o the return value
+     *
+     * @return the closure
+     */
+    static def Closure returnConstant(Object o) {
+        return {
+            return o
+        }
+    }
+
     private static void applyThrowable(BeforeAfterHook currentHook, XC_MethodHook.MethodHookParam param) {
         if (currentHook.throwable != null) {
             param.throwable = currentHook.throwable
