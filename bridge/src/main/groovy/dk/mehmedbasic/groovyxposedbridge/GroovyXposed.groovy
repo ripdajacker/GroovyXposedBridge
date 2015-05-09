@@ -1,6 +1,5 @@
 package dk.mehmedbasic.groovyxposedbridge
 
-import android.util.Log
 import de.robv.android.xposed.*
 import de.robv.android.xposed.callbacks.XC_InitPackageResources
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -14,8 +13,12 @@ import static de.robv.android.xposed.XposedHelpers.*
  */
 @SuppressWarnings("UnnecessaryQualifiedReference")
 abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPackageResources, IXposedHookZygoteInit {
-    private static final Object UNDEFINED = new Object()
-
+    protected static final Object UNDEFINED = new Object() {
+        @Override
+        String toString() {
+            return "GroovyXposed.UNDEFINED"
+        }
+    }
 
     protected XC_LoadPackage.LoadPackageParam loadPackageParam
     protected XC_InitPackageResources.InitPackageResourcesParam initPackageResourcesParam
@@ -72,7 +75,7 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
      */
     def hookMethod(Class clazz, Closure closure) {
         MethodHook hook = createHook(closure)
-        def typesAndCallback = hook.params + [new GroovyMethodHook(hook)]
+        Object[] typesAndCallback = hook.params + [new GroovyMethodHook(hook)]
         findAndHookMethod(clazz, hook.name, typesAndCallback)
     }
 
@@ -90,9 +93,9 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
      *
      * @param clazz the class to hook.
      */
-    def replaceMethod(Class clazz, Closure closure) {
+    static def replaceMethod(Class clazz, Closure closure) {
         MethodHook hook = createHook(closure)
-        def typesAndCallback = hook.params + [new GroovyMethodReplacement(hook)]
+        Object[] typesAndCallback = hook.params + [new GroovyMethodReplacement(hook)]
         findAndHookMethod(clazz, hook.name, typesAndCallback)
     }
 
@@ -100,7 +103,7 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
         hookConstructor(findClass(className), closure)
     }
 
-    def hookConstructor(Class clazz, Closure closure) {
+    static def hookConstructor(Class clazz, Closure closure) {
         MethodHook hook = createHook(closure)
         def typesAndCallback = hook.params + [new GroovyMethodHook(hook)]
         findAndHookConstructor(clazz, hook.name, typesAndCallback)
@@ -113,11 +116,11 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
      *
      * @return the created hook.
      */
-    private MethodHook createHook(Closure closure) {
+    private static MethodHook createHook(Closure closure) {
         def hook = new MethodHook()
-        def code = closure.rehydrate(hook, this, this)
-        code.resolveStrategy = Closure.DELEGATE_ONLY
-        code()
+        def code = closure.rehydrate(hook, hook, hook)
+        code.resolveStrategy = Closure.DELEGATE_FIRST
+        code.call()
         hook
     }
 
@@ -128,9 +131,9 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
         private String name;
         private Object[] params = [];
 
-        private Closure before = {}
-        private Closure after = {}
-        private Closure replace = {}
+        private Object before = UNDEFINED
+        private Object after = UNDEFINED
+        private Object replace = UNDEFINED
 
         private int priority = 50;
 
@@ -142,15 +145,15 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
             params = objects
         }
 
-        void before(Closure closure) {
+        void before(Object closure) {
             this.before = closure
         }
 
-        void after(Closure closure) {
+        void after(Object closure) {
             this.after = closure
         }
 
-        void replace(Closure closure) {
+        void replace(Object closure) {
             this.replace = closure
         }
 
@@ -163,6 +166,27 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
                 params = []
             }
             return params
+        }
+
+        Object getBefore() {
+            if (before == UNDEFINED) {
+                return null
+            }
+            return before
+        }
+
+        Object getAfter() {
+            if (after == UNDEFINED) {
+                return null
+            }
+            return after
+        }
+
+        Object getReplace() {
+            if (replace == UNDEFINED) {
+                return null
+            }
+            return replace
         }
     }
 
@@ -190,15 +214,20 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
         @Override
         protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
             def currentHook = new BeforeAfterHook(param.args)
-            try {
-                rehydrateAndRun(hook.replace, currentHook, param)
-                applyThrowable(currentHook, param)
-            } catch (Throwable throwable) {
-                param.setThrowable(throwable)
+
+            def replace = hook.getReplace()
+            if (replace instanceof XC_MethodReplacement) {
+                return ((XC_MethodReplacement) replace).replaceHookedMethod(param)
             }
-            return currentHook.result
+
+            def code = rehydrate(replace as Closure, currentHook, param)
+
+            code?.call(*param.args)
+            apply(currentHook, param)
+            return null
         }
     }
+
     /**
      * A XC_MethodHook implementation
      */
@@ -212,11 +241,14 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
         @Override
         protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
             def currentHook = new BeforeAfterHook(param.args)
-            try {
-                rehydrateAndRun(hook.before, currentHook, param)
-                applyResultAndThrowable(currentHook, param)
-            } catch (Throwable throwable) {
-                param.setThrowable(throwable)
+
+            def before = hook.getBefore()
+            if (before instanceof XC_MethodHook) {
+                ((XC_MethodHook) before).beforeHookedMethod(param)
+            } else {
+                def code = rehydrate(before as Closure, currentHook, param)
+                code?.call(*param.args)
+                apply(currentHook, param)
             }
         }
 
@@ -224,13 +256,13 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
         @Override
         protected void afterHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
             def currentHook = new BeforeAfterHook(param.args)
-            try {
-                def closure = hook.after
-                rehydrateAndRun(closure, currentHook, param)
-                applyResultAndThrowable(currentHook, param)
-            } catch (Throwable throwable) {
-                param.setThrowable(throwable)
-                Log.e("Penis", "Shits giggles", throwable)
+            def after = hook.getAfter()
+            if (after instanceof XC_MethodHook) {
+                ((XC_MethodHook) after).afterHookedMethod(param)
+            } else {
+                def code = rehydrate(after as Closure, currentHook, param)
+                code?.call(*param.args)
+                apply(currentHook, param)
             }
         }
 
@@ -243,35 +275,42 @@ abstract class GroovyXposed implements IXposedHookLoadPackage, IXposedHookInitPa
      *
      * @return the closure
      */
-    static def Closure returnConstant(Object o) {
-        return {
-            return o
+    static def XC_MethodReplacement returnConstant(Object o) {
+        new XC_MethodReplacement() {
+            @Override
+            protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable {
+                return o
+            }
         }
     }
 
-    private static void applyThrowable(BeforeAfterHook currentHook, XC_MethodHook.MethodHookParam param) {
-        if (currentHook.throwable != null) {
-            param.throwable = currentHook.throwable
-        }
-    }
 
-    private static void applyResultAndThrowable(BeforeAfterHook currentHook, XC_MethodHook.MethodHookParam param) {
+    private static void apply(BeforeAfterHook currentHook, XC_MethodHook.MethodHookParam param) {
         if (currentHook.result != UNDEFINED) {
             param.result = currentHook.result
         }
-        applyThrowable(currentHook, param)
+        if (currentHook.throwable != null) {
+            param.throwable = currentHook.throwable
+        }
+        param.args = currentHook.args
     }
 
-    private
-    static void rehydrateAndRun(Closure closure, BeforeAfterHook currentHook, XC_MethodHook.MethodHookParam param) {
+    static Closure rehydrate(Closure closure, BeforeAfterHook currentHook, XC_MethodHook.MethodHookParam param) {
         def code = closure?.rehydrate(currentHook, currentHook, param.thisObject)
         code?.resolveStrategy = Closure.DELEGATE_ONLY
-        code?.call(*param.args)
-
+        return code ?: null
     }
 
     abstract void handleLoadedPackage()
 
     void handleInitPackageResources() {
+    }
+
+    private static final class ConstantReturn extends XC_MethodReplacement {
+
+        @Override
+        protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable {
+            return null
+        }
     }
 }
